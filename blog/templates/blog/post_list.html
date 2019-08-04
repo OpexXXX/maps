@@ -1,0 +1,120 @@
+<html>
+
+<head>
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
+    integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+    crossorigin="" />
+
+  <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"
+    integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og=="
+    crossorigin=""></script>
+  {% load static %}
+  <script src={% static "svg-icon.js"%}></script>
+
+  <title>Карта</title>
+
+</head>
+
+<body>
+
+  <div id="mapid" style="width: 100%; height: 100%;"></div>
+  <script>
+    var myIcon = L.icon({
+      iconUrl: 'https://image.flaticon.com/icons/png/512/23/23782.png',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+      popupAnchor: [-3, -20],
+      //shadowUrl: 'https://image.flaticon.com/icons/png/512/23/23782.png',
+      //shadowSize: [68, 95],
+      //shadowAnchor: [22, 94]
+    });
+
+    var mymap = L.map('mapid').setView([53.274, 92.390], 14);
+
+    L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+      maxZoom: 18,
+      attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+        '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+        'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+      id: 'mapbox.streets'
+    }).addTo(mymap);
+
+    var markersLayer = new L.LayerGroup();
+    var lineLayer = new L.LayerGroup();
+
+    mymap.addLayer(markersLayer);
+    //Заполням массив маркерами
+    //
+    //var ico = new L.DivIcon.SVGIcon({ color: "rgb(0,0,100)",
+    
+   var i =1;
+    {% for post in posts %}
+   
+    L.marker([{{ post.title }}, {{ post.text }}], 
+    { icon: new L.DivIcon.SVGIcon({ 
+      color: "rgb(0,0,100)",
+    circleText : i,
+    circleRatio: 0.7,
+    fontSize:14}), 
+    draggable: true }).on("click", 
+    markerClick).on("drag", markerEndDrug).addTo(markersLayer);
+    i++;
+    {% endfor %}
+
+    var pathCoords = connectTheDots(markersLayer);
+    var pathLine = L.polyline(pathCoords).addTo(lineLayer)
+
+    // при клике переключаем dragging
+    function markerEndDrug(event) {
+      var clickedMr = event.target;
+var tooltip ="coor " + clickedMr.getLatLng(); 
+      clickedMr.options.title = "";
+      clickedMr.bindTooltip(tooltip).openTooltip();
+     
+      lineLayer.clearLayers();
+      pathCoords = connectTheDots(markersLayer);
+      pathLine = L.polyline(pathCoords).addTo(lineLayer)
+      mymap.addLayer(lineLayer);
+      
+    }
+    function markerClick(event) {
+
+      var clickedMarker = event.target;
+
+      // do some stuff…
+      if (clickedMarker.options.draggable) {
+        clickedMarker.options.draggable = false;
+        clickedMarker.dragging.disable();
+       
+      } else {
+        clickedMarker.options.draggable = true;
+        clickedMarker.dragging.enable();
+        
+      }
+      clickedMarker.options.title = event.latlng;
+     clickedMarker.remove();
+      clickedMarker.addTo(markersLayer);
+      mymap.addLayer(markersLayer);
+    }
+
+    function connectTheDots(data) {
+      var c = [];
+      for (i in data._layers) {
+        var x = data._layers[i]._latlng.lat;
+        var y = data._layers[i]._latlng.lng;
+        c.push([x, y]);
+      }
+      return c;
+    }
+
+
+    var popup = L.popup();
+    mymap.addLayer(markersLayer);
+    mymap.addLayer(lineLayer);
+  </script>
+
+</body>
+
+</html>
